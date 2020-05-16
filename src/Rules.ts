@@ -59,7 +59,7 @@ export function getBindings(rule: Rule, facts: Relationship[]): { [key: string]:
     const bindings: { [key: string]: Binding[][] } = {};
 
     rule.if.forEach((condition) => {
-        const relations = facts.filter((fact) => condition.name === fact.name);
+        const relations = [...facts].filter((fact) => condition.name === fact.name);
         if (!relations.length) return;
 
         // Create an object where key is relationship name
@@ -80,7 +80,7 @@ export function getBindings(rule: Rule, facts: Relationship[]): { [key: string]:
     return bindings;
 }
 
-export function getRuleMatches(bindings: { [key: string]: Binding[][] }) {
+export function getRuleMatches(bindings: { [key: string]: Binding[][] }): Binding[][] {
     const results = [] as any;
     const keys: string[] = Object.keys(bindings);
     for (let i = 0; i < keys.length - 1; i++) {
