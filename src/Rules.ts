@@ -1,4 +1,5 @@
 import config from './config';
+import { isEqual, uniqWith } from 'lodash';
 
 export function parseRules(input: { name: string; if: string[]; then: string[] }[]) {
     const rules = [] as Rule[];
@@ -54,6 +55,57 @@ export function parseRules(input: { name: string; if: string[]; then: string[] }
     return rules;
 }
 
+export function getBindings(rule: Rule, facts: Relationship[]): { [key: string]: Binding[][] } {
+    const bindings: { [key: string]: Binding[][] } = {};
+
+    rule.if.forEach((condition) => {
+        const relations = facts.filter((fact) => condition.name === fact.name);
+        if (!relations.length) return;
+
+        // Create an object where key is relationship name
+        bindings[condition.name] = [];
+
+        relations.forEach((relation) => {
+            bindings[condition.name].push([]);
+
+            // Push to the last element of array
+            relation.data.forEach((value, index) => {
+                // Push the binding (X,Y,Z) and the value
+                bindings[condition.name][bindings[condition.name].length - 1].push({
+                    [condition.data[index].replace('?', '')]: value,
+                });
+            });
+        });
+    });
+    return bindings;
+}
+
+export function getRuleMatches(bindings: { [key: string]: Binding[][] }) {
+    const results = [] as any;
+    const keys: string[] = Object.keys(bindings);
+    for (let i = 0; i < keys.length - 1; i++) {
+        bindings[keys[i]].forEach((firstConditionMatches: Binding[]) => {
+            firstConditionMatches.forEach((firstConditionMatch) => {
+                bindings[keys[i + 1]].forEach((secondConditionMatches: Binding[]) => {
+                    const equal = secondConditionMatches.some((secondConditionMatch) =>
+                        isEqual(firstConditionMatch, secondConditionMatch)
+                    );
+                    if (equal) {
+                        // Returns array of unique bindings [ X: 'x', Y: 'y', Z: 'z']
+                        results.push(
+                            uniqWith(
+                                [...firstConditionMatches, ...secondConditionMatches],
+                                (a, b) => Object.keys(a)[0] === Object.keys(b)[0]
+                            )
+                        );
+                    }
+                });
+            });
+        });
+    }
+    return results;
+}
+
 export interface Rule {
     name: string;
     if: Relationship[];
@@ -68,4 +120,8 @@ export interface Relationship {
 export interface Action {
     name: string;
     relationship: Relationship;
+}
+
+export interface Binding {
+    [key: string]: string;
 }
