@@ -1,6 +1,10 @@
 import { Action, Binding, Relationship } from './Rules';
 import config from './config';
-import { some, isEqual } from 'lodash';
+import { isEqual } from 'lodash';
+
+function some(arr: any[], item: any) {
+    return !!arr.find((arrItem) => JSON.stringify(arrItem) === JSON.stringify(item));
+}
 
 export function parseFacts(input: string[]) {
     const facts = [] as Relationship[];

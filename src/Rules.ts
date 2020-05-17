@@ -1,5 +1,5 @@
 import config from './config';
-import { isEqual, uniqWith } from 'lodash';
+import { flatten, uniq, groupBy, filter, some } from 'lodash';
 
 export function parseRules(input: { name: string; if: string[]; then: string[] }[]) {
     const rules = [] as Rule[];
@@ -105,28 +105,53 @@ export function getBindings(rule: Rule, facts: Relationship[]): Binding[][][] {
 }
 
 export function getRuleMatches(bindings: Binding[][][]): Binding[][] {
-    const results = [] as any;
+    let results: Binding[] = [];
     for (let i = 0; i < bindings.length - 1; i++) {
-        bindings[i].forEach((firstConditionMatches: Binding[]) => {
-            firstConditionMatches.forEach((firstConditionMatch) => {
-                bindings[i + 1].forEach((secondConditionMatches: Binding[]) => {
-                    const equal = secondConditionMatches.some((secondConditionMatch) =>
-                        isEqual(firstConditionMatch, secondConditionMatch)
-                    );
-                    if (equal) {
-                        // Returns array of unique bindings [ X: 'x', Y: 'y', Z: 'z']
-                        results.push(
-                            uniqWith(
-                                [...firstConditionMatches, ...secondConditionMatches],
-                                (a, b) => Object.keys(a)[0] === Object.keys(b)[0]
-                            )
-                        );
+        // Get keys of first array
+        let keys: string[] = uniq(flatten(flatten(bindings[i]).map((item) => Object.keys(item))));
+        // Get keys of second array
+        keys = keys.concat(
+            uniq(flatten(flatten(bindings[i + 1]).map((item) => Object.keys(item))))
+        );
+
+        // Get its common row
+        const common: string = uniq(
+            flatten(
+                filter(
+                    groupBy(keys, function (n) {
+                        return n;
+                    }),
+                    function (n) {
+                        return n.length > 1;
                     }
-                });
+                )
+            )
+        )[0];
+
+        // Merge it on its common key
+        let result: Binding[] = [];
+        bindings[i].forEach((item) => {
+            const commonValue = Object.assign(item[0], item[1])[common];
+            bindings[i + 1].forEach((second) => {
+                if (Object.assign(second[0], second[1])[common] === commonValue) {
+                    result.push({
+                        ...Object.assign(item[0], item[1]),
+                        ...Object.assign(second[0], second[1]),
+                    });
+                }
             });
         });
+
+        if (!results.length) {
+            results = result;
+        } else {
+            results = results.filter((value: Binding) => some(result, value));
+        }
     }
-    return results;
+
+    return results.map((item) =>
+        Object.entries(item).map((binding) => ({ [binding[0]]: binding[1] }))
+    );
 }
 
 export interface Rule {
