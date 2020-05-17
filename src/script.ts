@@ -10,7 +10,6 @@ do {
     rules.forEach((rule) => {
         const bindings = getBindings(rule, facts);
         const results = getRuleMatches(bindings);
-        console.log("Stack: ",stack);
         results.forEach((result) => {
             facts = apply(rule.then, result, stack, facts);
         });

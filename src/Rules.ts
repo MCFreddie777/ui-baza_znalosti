@@ -73,8 +73,15 @@ export function getBindings(rule: Rule, facts: Relationship[]): Binding[][][] {
                     }
                 });
             });
-            // Map into objects
-            relations = subjects.map((subject) => ({ data: [subject], name: '<>' }));
+
+            // Map subjects into pairs
+            relations = [];
+            for (let i = 0; i < subjects.length - 1; i++) {
+                for (let j = i + 1; j < subjects.length; j++) {
+                    relations.push({ data: [subjects[i], subjects[j]], name: '<>' });
+                    relations.push({ data: [subjects[j], subjects[i]], name: '<>' });
+                }
+            }
         }
 
         if (!relations.length) return;
