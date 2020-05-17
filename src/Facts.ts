@@ -1,6 +1,6 @@
 import { Action, Binding, Relationship } from './Rules';
 import config from './config';
-import { isEqual } from 'lodash';
+import { isEqual, remove } from 'lodash';
 
 function some(arr: any[], item: any) {
     return !!arr.find((arrItem) => JSON.stringify(arrItem) === JSON.stringify(item));
@@ -63,6 +63,6 @@ function sprava(relationship: string, subjects: string[], { messages }) {
 }
 
 //@ts-ignore no-unused-function;
-function vymaz(relationship: string, subjects: string[], { facts }: { facts: Relationship[] }) {
-    facts = facts.filter((fact) => !isEqual(fact, { data: [...subjects], name: relationship }));
+function vymaz(relationship: string, subjects: string[], { facts }) {
+    facts = remove(facts, (fact) => isEqual(fact, { data: [...subjects], name: relationship }));
 }

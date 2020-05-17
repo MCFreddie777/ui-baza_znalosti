@@ -8,6 +8,9 @@ const messages: string[] = [];
 
 const stack = [] as any;
 do {
+    if (stack.length) {
+        facts.push(stack.shift());
+    }
     rules.forEach((rule) => {
         const bindings = getBindings(rule, facts);
         const results = getRuleMatches(bindings);
@@ -15,7 +18,6 @@ do {
             apply(rule.then, result, { messages, stack, facts });
         });
     });
-    facts.push(stack.shift());
 } while (stack.length);
 
 console.log('Facts: ', facts);
