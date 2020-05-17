@@ -3,14 +3,19 @@ import { getBindings, getRuleMatches, parseRules } from './Rules';
 import { apply, parseFacts } from './Facts';
 
 const rules = parseRules(input.rules);
-const facts = parseFacts(input.facts);
+let facts = parseFacts(input.facts);
 
 const stack = [] as any;
 do {
     rules.forEach((rule) => {
         const bindings = getBindings(rule, facts);
         const results = getRuleMatches(bindings);
-        results.forEach((result) => apply(rule.then, result, stack, facts));
+        console.log("Stack: ",stack);
+        results.forEach((result) => {
+            facts = apply(rule.then, result, stack, facts);
+        });
     });
     facts.push(stack.shift());
 } while (stack.length);
+
+console.log('Facts: ', facts);

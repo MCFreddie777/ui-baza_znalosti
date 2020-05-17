@@ -55,23 +55,40 @@ export function parseRules(input: { name: string; if: string[]; then: string[] }
     return rules;
 }
 
-export function getBindings(rule: Rule, facts: Relationship[]): { [key: string]: Binding[][] } {
-    const bindings: { [key: string]: Binding[][] } = {};
+export function getBindings(rule: Rule, facts: Relationship[]): Binding[][][] {
+    const bindings: Binding[][][] = [];
 
     rule.if.forEach((condition) => {
-        const relations = [...facts].filter((fact) => condition.name === fact.name);
+        let relations: Relationship[];
+
+        if (condition.name !== '<>') {
+            relations = facts.filter((fact) => condition.name === fact.name);
+        } else {
+            // Get all subjects
+            let subjects: string[] = [];
+            facts.forEach((fact) => {
+                fact.data.forEach((current) => {
+                    if (!subjects.includes(current)) {
+                        subjects.push(current);
+                    }
+                });
+            });
+            // Map into objects
+            relations = subjects.map((subject) => ({ data: [subject], name: '<>' }));
+        }
+
         if (!relations.length) return;
 
         // Create an object where key is relationship name
-        bindings[condition.name] = [];
+        bindings.push([]);
 
         relations.forEach((relation) => {
-            bindings[condition.name].push([]);
+            bindings[bindings.length - 1].push([]);
 
             // Push to the last element of array
             relation.data.forEach((value, index) => {
                 // Push the binding (X,Y,Z) and the value
-                bindings[condition.name][bindings[condition.name].length - 1].push({
+                bindings[bindings.length - 1][bindings[bindings.length - 1].length - 1].push({
                     [condition.data[index].replace('?', '')]: value,
                 });
             });
@@ -80,13 +97,12 @@ export function getBindings(rule: Rule, facts: Relationship[]): { [key: string]:
     return bindings;
 }
 
-export function getRuleMatches(bindings: { [key: string]: Binding[][] }): Binding[][] {
+export function getRuleMatches(bindings: Binding[][][]): Binding[][] {
     const results = [] as any;
-    const keys: string[] = Object.keys(bindings);
-    for (let i = 0; i < keys.length - 1; i++) {
-        bindings[keys[i]].forEach((firstConditionMatches: Binding[]) => {
+    for (let i = 0; i < bindings.length - 1; i++) {
+        bindings[i].forEach((firstConditionMatches: Binding[]) => {
             firstConditionMatches.forEach((firstConditionMatch) => {
-                bindings[keys[i + 1]].forEach((secondConditionMatches: Binding[]) => {
+                bindings[i + 1].forEach((secondConditionMatches: Binding[]) => {
                     const equal = secondConditionMatches.some((secondConditionMatch) =>
                         isEqual(firstConditionMatch, secondConditionMatch)
                     );
