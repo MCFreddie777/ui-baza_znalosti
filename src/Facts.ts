@@ -27,14 +27,18 @@ function bind(what: string[], substitution: Binding[]) {
     return what.map((key) => substitution.find((item) => key in item)![key]);
 }
 
-export function apply(functions: Action[], items: Binding[], stack: any[], facts: Relationship[]) {
+export function apply(
+    functions: Action[],
+    items: Binding[],
+    { stack, facts, messages }: { stack: Relationship[]; facts: Relationship[]; messages: string[] }
+) {
     functions.forEach((fn) => {
-        facts = eval(fn.name)(fn.relationship.name, bind(fn.relationship.data, items), {
+        eval(fn.name)(fn.relationship.name, bind(fn.relationship.data, items), {
             stack,
             facts,
+            messages,
         });
     });
-    return facts;
 }
 
 //@ts-ignore no-unused-function;
@@ -43,17 +47,18 @@ function pridaj(relationship: string, subjects: string[], { stack, facts }) {
     if (!some(facts, newFact) && !some(stack, newFact)) {
         stack.push(newFact);
     }
-    return facts;
 }
 
 //@ts-ignore no-unused-function;
-function sprava(relationship: string, subjects: string[], { facts }) {
-    console.log(`${subjects} ma ${relationship}`);
-    return facts;
+function sprava(relationship: string, subjects: string[], { messages }) {
+    const message = `${subjects} ma ${relationship}`;
+    if (!messages.includes(message)) {
+        messages.push(message);
+        console.log(message);
+    }
 }
 
 //@ts-ignore no-unused-function;
 function vymaz(relationship: string, subjects: string[], { facts }: { facts: Relationship[] }) {
     facts = facts.filter((fact) => !isEqual(fact, { data: [...subjects], name: relationship }));
-    return facts;
 }
